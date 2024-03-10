@@ -1,0 +1,135 @@
+#!/bin/sh
+
+export POSIXLY_CORRECT=yes
+export LC_NUMERIC=en_us.UTF-8
+
+print_help()
+{
+    echo "Usage:  xtf [-h|--help]"
+    echo "        xtf [FILTER] [COMMAND] USER LOG [LOG2 [...]"
+    echo ""
+    echo "COMMAND:"
+    echo "        list - listing of records for a given user"
+    echo "        list-currency - listing of the sorted list of occurring currencies"
+    echo "        status - statement of the actual account balance, grouped and sorted by currency"
+    echo "        profit - customer's account statement with fictitious return"
+    echo ""
+    echo "FILTER:"
+    echo "        -a DATETIME - after: only records AFTER this date and time (without it), DATETIME is a format YYYY-MM-DD HH:MM:SS"
+    echo "        -b DATETIME - before: only records BEFORE this one are considered date and time (without)"
+    echo "        -c CURRENCY - only records corresponding to the given currency"
+}
+
+COMMAND=""
+FILTER1=""
+FILTER2=""
+FILTER3=""
+USER=""
+LOG=""
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -h|--help)
+            print_help
+            exit 0
+            ;;
+        -a)
+            FILTER1="$2"
+            shift 2
+            ;;
+        -b)
+            FILTER2="$2"
+            shift 2
+            ;;
+        -c)
+            FILTER3="$2"
+            shift 2
+            ;;
+        list | list-currency | status | profit)
+            COMMAND="$1"
+            shift
+            ;;
+        *)
+            case "$1" in
+                *.log|*.gz)
+                    LOG="$1"
+                    ;;
+                *)
+                    if [ "$prev_arg" != '-a' ] && [ "$prev_arg" != '-b' ] && [ "$prev_arg" != '-c' ]; then
+                        USER="$1"
+                    fi
+                    ;;
+            esac
+            prev_arg="$1"
+            shift
+            ;;
+    esac
+done
+
+list()
+{
+    for logfile in $LOG; do
+        if [ -f "$logfile" ]; then
+            # Use awk to filter lines containing the USER and sort them
+            filtered_lines=$(awk -F';' -v user="$USER" '$1 == user' "$logfile" | sort)
+            
+            # If FILTER1 is set, filter lines after the specified date
+            if [ -n "$FILTER1" ]; then
+                filtered_lines=$(echo "$filtered_lines" | awk -v filter1="$FILTER1" -F';' '{if ($2 > filter1) print}')
+            fi
+
+            # If FILTER2 is set, filter lines before the specified date
+            if [ -n "$FILTER2" ]; then
+                filtered_lines=$(echo "$filtered_lines" | awk -v filter2="$FILTER2" -F';' '{if ($2 < filter2) print}')
+            fi
+
+            # If FILTER3 is set, filter lines by currency
+            if [ -n "$FILTER3" ]; then
+                filtered_lines=$(echo "$filtered_lines" | awk -v filter3="$FILTER3" -F';' '{if ($3 == filter3) print}')
+            fi
+
+            # Print the filtered lines if there are any
+            if [ -n "$filtered_lines" ]; then
+                echo "Log file: $logfile"
+                echo "$filtered_lines"
+            fi
+        else
+            echo "Error: Log file '$logfile' does not exist."
+        fi
+    done
+}
+
+list_currency()
+{
+    echo "Zatím neimplementováno"
+}
+
+status()
+{
+    echo "Zatím neimplementováno"
+}
+
+profit()
+{
+    echo "Zatím neimplementováno"
+}
+
+if [ "$COMMAND" = "list" ]; then
+    list
+
+elif [ "$COMMAND" = "list-currency" ]; then
+    list_currency
+
+elif [ "$COMMAND" = "status" ]; then
+    status
+
+elif [ "$COMMAND" = "profit" ]; then
+   profit
+fi
+
+echo "COMMAND: $COMMAND"
+echo "FILTER1: $FILTER1"
+echo "FILTER2: $FILTER2"
+echo "FILTER3: $FILTER3"
+echo "USER: $USER"
+echo "LOG: $LOG"
