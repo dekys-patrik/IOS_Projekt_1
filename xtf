@@ -90,7 +90,6 @@ list()
 
             # Print the filtered lines if there are any
             if [ -n "$filtered_lines" ]; then
-                echo "Log file: $logfile"
                 echo "$filtered_lines"
             fi
         else
@@ -101,7 +100,17 @@ list()
 
 list_currency()
 {
-    echo "Zatím neimplementováno"
+    for logfile in $LOG; do
+        if [ -f "$logfile" ]; then
+            # Use awk to extract currency column and sort them
+            currencies=$(awk -F';' '{print $3}' "$logfile" | sort | uniq)
+
+            # Print the unique currencies
+            echo "$currencies"
+        else
+            echo "Error: Log file '$logfile' does not exist."
+        fi
+    done
 }
 
 status()
@@ -126,6 +135,7 @@ elif [ "$COMMAND" = "status" ]; then
 elif [ "$COMMAND" = "profit" ]; then
    profit
 fi
+
 
 echo "COMMAND: $COMMAND"
 echo "FILTER1: $FILTER1"
