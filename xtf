@@ -26,6 +26,12 @@ FILTER2=""
 FILTER3=""
 USER=""
 LOG=""
+#XTF_PROFIT=20
+
+FILTERED=""
+CURRENCIES=""
+STATUS=""
+#PROFIT=""
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -90,7 +96,7 @@ list()
 
             # Print the filtered lines if there are any
             if [ -n "$filtered_lines" ]; then
-                echo "$filtered_lines"
+                FILTERED="$FILTERED$filtered_lines"
             fi
         else
             echo "Error: Log file '$logfile' does not exist."
@@ -99,47 +105,50 @@ list()
 }
 
 list_currency()
-{
-    for logfile in $LOG; do
-        if [ -f "$logfile" ]; then
-            # Use awk to extract currency column and sort them
-            currencies=$(awk -F';' '{print $3}' "$logfile" | sort | uniq)
-
-            # Print the unique currencies
-            echo "$currencies"
-        else
-            echo "Error: Log file '$logfile' does not exist."
-        fi
-    done
+{   
+    list
+    CURRENCIES=$(echo "$FILTERED" | awk -F';' '{print $3}' | sort | uniq)
 }
 
 status()
 {
-    echo "Zatím neimplementováno"
+    list_currency
+
+    # Loop through each currency in CURRENCIES
+    for currency in $CURRENCIES; do
+        # Calculate actual account balance for the currency
+        balance=$(echo "$FILTERED" | awk -v curr="$currency" -F';' 'BEGIN {sum=0} $3 == curr {sum += $4} END {printf "%s : %.4f\n", curr, sum}')
+
+        # Append currency and balance to the STATUS variable
+        STATUS="$STATUS$balance\n"
+    done
 }
 
 profit()
 {
-    echo "Zatím neimplementováno"
+    echo "Zatim neimplementovano"
 }
 
-if [ "$COMMAND" = "list" ]; then
+if [ "$COMMAND" = "list" ] || [ -z "$COMMAND" ]; then
     list
+    echo "$FILTERED"
 
 elif [ "$COMMAND" = "list-currency" ]; then
     list_currency
+    echo "$CURRENCIES"
 
 elif [ "$COMMAND" = "status" ]; then
     status
+    echo "$STATUS"
 
 elif [ "$COMMAND" = "profit" ]; then
    profit
 fi
 
 
-echo "COMMAND: $COMMAND"
-echo "FILTER1: $FILTER1"
-echo "FILTER2: $FILTER2"
-echo "FILTER3: $FILTER3"
-echo "USER: $USER"
-echo "LOG: $LOG"
+#echo USER: $USER
+#echo COMMAND: $COMMAND
+#echo FILTER1: $FILTER1
+#echo FILTER3: $FILTER3
+#echo FILTER2: $FILTER2
+#echo "FILTERED: $FILTERED\n"
