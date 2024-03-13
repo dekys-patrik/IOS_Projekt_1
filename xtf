@@ -57,8 +57,13 @@ while [ "$#" -gt 0 ]; do
             ;;
         -a)
             if [ "$COUNT_FILTER1" = 0 ]; then
-                FILTER1="$2"
-                COUNT_FILTER1=1
+                if [[ "$2" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}:[0-9]{2}:[0-9]{2}$ ]]; then
+                    FILTER1="$2"
+                    COUNT_FILTER1=1
+                else 
+                    #TODO: error message if needed
+                    exit 1
+                fi
             else
                 #TODO: error message if needed
                 exit 1
@@ -67,8 +72,13 @@ while [ "$#" -gt 0 ]; do
             ;;
         -b)
             if [ "$COUNT_FILTER2" = 0 ]; then
-                FILTER2="$2"
-                COUNT_FILTER2=1
+                if [[ "$2" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}:[0-9]{2}:[0-9]{2}$ ]]; then
+                    FILTER2="$2"
+                    COUNT_FILTER2=1
+                else 
+                    #TODO: error message if needed
+                    exit 1
+                fi
             else
                 #TODO: error message if needed
                 exit 1
@@ -92,7 +102,7 @@ while [ "$#" -gt 0 ]; do
         *)
             case "$1" in
                 *.log|*.gz)
-                    LOG="$LOG $1"
+                    LOG="$LOG $(echo "$1" | tr -d ' ')"
                     ;;
                 *)
                     if [ "$prev_arg" != '-a' ] && [ "$prev_arg" != '-b' ] && [ "$prev_arg" != '-c' ]; then
@@ -195,9 +205,6 @@ profit()
         # Append currency and balance to the PROFIT variable
         PROFIT="$PROFIT$balance\n"
     done
-
-    # Print the final profit
-    echo "$PROFIT"
 }
 
 if [ "$COMMAND" = "list" ] || [ -z "$COMMAND" ]; then
@@ -214,6 +221,7 @@ elif [ "$COMMAND" = "status" ]; then
 
 elif [ "$COMMAND" = "profit" ]; then
    profit
+   echo "$PROFIT"
 fi
 
 # DEBUGGING:
