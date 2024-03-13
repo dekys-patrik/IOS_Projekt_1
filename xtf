@@ -20,18 +20,29 @@ print_help()
     echo "        -c CURRENCY - only records corresponding to the given currency"
 }
 
+# Default values for the options
 COMMAND=""
 FILTER1=""
 FILTER2=""
 FILTER3=""
 USER=""
 LOG=""
-#XTF_PROFIT=20
 
+# Default value for the profit in percent
+XTF_PROFIT=${XTF_PROFIT:-20}
+
+# Counters for the number of times each option is used
+COUNT_COMMAND=0
+COUNT_FILTER1=0
+COUNT_FILTER2=0
+COUNT_USER=0
+COUNT_LOG=0
+
+# Output values of functions
 FILTERED=""
 CURRENCIES=""
 STATUS=""
-#PROFIT=""
+PROFIT=""
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -40,11 +51,23 @@ while [ "$#" -gt 0 ]; do
             exit 0
             ;;
         -a)
-            FILTER1="$2"
+            if [ "$COUNT_FILTER1" = 0 ]; then
+                FILTER1="$2"
+                COUNT_FILTER1=1
+            else
+                #TODO: error message if needed
+                exit 1
+            fi
             shift 2
             ;;
         -b)
-            FILTER2="$2"
+            if [ "$COUNT_FILTER2" = 0 ]; then
+                FILTER2="$2"
+                COUNT_FILTER2=1
+            else
+                #TODO: error message if needed
+                exit 1
+            fi
             shift 2
             ;;
         -c)
@@ -52,17 +75,29 @@ while [ "$#" -gt 0 ]; do
             shift 2
             ;;
         list | list-currency | status | profit)
-            COMMAND="$1"
+            if [ "$COUNT_COMMAND" = 0 ]; then
+                COMMAND="$1"
+                COUNT_COMMAND=1
+            else
+                #TODO: error message if needed
+                exit 1
+            fi
             shift
             ;;
         *)
             case "$1" in
                 *.log|*.gz)
-                    LOG="$1"
+                    LOG="$LOG $1"
                     ;;
                 *)
                     if [ "$prev_arg" != '-a' ] && [ "$prev_arg" != '-b' ] && [ "$prev_arg" != '-c' ]; then
-                        USER="$1"
+                        if [ "$COUNT_USER" = 0 ]; then
+                            USER="$1"
+                            COUNT_USER=1
+                        else
+                        #TODO: error message if needed
+                        exit 1
+                        fi
                     fi
                     ;;
             esac
@@ -76,9 +111,22 @@ list()
 {
     for logfile in $LOG; do
         if [ -f "$logfile" ]; then
-            # Use awk to filter lines containing the USER and sort them
-            filtered_lines=$(awk -F';' -v user="$USER" '$1 == user' "$logfile" | sort)
-            
+            if [ "${logfile##*.}" = "gz" ]; then
+                # Check if gunzip command exists
+                if command -v gunzip >/dev/null 2>&1; then
+                    # Use gunzip to decompress the file
+                    decompressed_log=$(gunzip -c "$logfile")
+                    # Use awk to filter lines containing the USER and sort them
+                    filtered_lines=$(echo "$decompressed_log" | awk -F';' -v user="$USER" '$1 == user' | sort)
+                else
+                     echo "" #TODO: error message if needed
+                    continue
+                fi
+            else
+                # Use awk to filter lines containing the USER and sort them
+                filtered_lines=$(awk -F';' -v user="$USER" '$1 == user' "$logfile" | sort)
+            fi
+
             # If FILTER1 is set, filter lines after the specified date
             if [ -n "$FILTER1" ]; then
                 filtered_lines=$(echo "$filtered_lines" | awk -v filter1="$FILTER1" -F';' '{if ($2 > filter1) print}')
@@ -94,12 +142,18 @@ list()
                 filtered_lines=$(echo "$filtered_lines" | awk -v filter3="$FILTER3" -F';' '{if ($3 == filter3) print}')
             fi
 
-            # Print the filtered lines if there are any
+            # Store the filtered lines in the FILTERED variable
             if [ -n "$filtered_lines" ]; then
+                if [ "$COUNT_LOG" = 0 ]; then
+                FILTERED="$FILTERED$filtered_lines\n"
+                COUNT_LOG=0
+                else
                 FILTERED="$FILTERED$filtered_lines"
+                COUNT_LOG=1
+                fi 
             fi
         else
-            echo "Error: Log file '$logfile' does not exist."
+            echo "" #TODO: error message if needed
         fi
     done
 }
@@ -107,7 +161,7 @@ list()
 list_currency()
 {   
     list
-    CURRENCIES=$(echo "$FILTERED" | awk -F';' '{print $3}' | sort | uniq)
+    CURRENCIES=$(echo "$FILTERED" | awk -F';' '{print $3}' | sort | uniq | awk 'NF')
 }
 
 status()
@@ -126,7 +180,19 @@ status()
 
 profit()
 {
-    echo "Zatim neimplementovano"
+    list_currency
+
+    # Loop through each currency in CURRENCIES
+    for currency in $CURRENCIES; do
+        # Calculate the actual account balance for the currency
+        balance=$(echo "$FILTERED" | awk -v curr="$currency" -v profit_xtf="$XTF_PROFIT" -F';' 'BEGIN {sum=0} $3 == curr {if ($4 > 0) sum += $4 * (profit_xtf + 100) / 100; else sum += $4} END {printf "%s : %.4f\n", curr, sum}')
+
+        # Append currency and balance to the PROFIT variable
+        PROFIT="$PROFIT$balance\n"
+    done
+
+    # Print the final profit
+    echo "$PROFIT"
 }
 
 if [ "$COMMAND" = "list" ] || [ -z "$COMMAND" ]; then
@@ -145,10 +211,14 @@ elif [ "$COMMAND" = "profit" ]; then
    profit
 fi
 
-
-#echo USER: $USER
-#echo COMMAND: $COMMAND
-#echo FILTER1: $FILTER1
-#echo FILTER3: $FILTER3
-#echo FILTER2: $FILTER2
-#echo "FILTERED: $FILTERED\n"
+# DEBUGGING:
+# echo "USER: $USER"
+# echo "COMMAND: $COMMAND"
+# echo "FILTER1: $FILTER1"
+# echo "FILTER3: $FILTER3"
+# echo "FILTER2: $FILTER2"
+# echo "FILTERED:"
+# echo "$FILTERED"
+# echo "LOGY: $LOG"
+# echo "PROFIT: $PROFIT\n"
+# echo "$CURRENCIES"
