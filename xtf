@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Title: XTF - eXtortion, Travesty, Fraud
 # Description: A script for pre-processing trade logs from crpyto stock exchange
