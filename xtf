@@ -204,7 +204,7 @@ if [ "$COMMAND" = "list" ] || [ -z "$COMMAND" ]; then
 
 elif [ "$COMMAND" = "list-currency" ]; then
     list_currency
-    printf "%b" "$CURRENCIES"
+    printf "%b" "$CURRENCIES\n"
 
 elif [ "$COMMAND" = "status" ]; then
     status
