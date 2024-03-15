@@ -6,23 +6,21 @@
 # Last modified: 2024-03-13
 
 export POSIXLY_CORRECT=yes
-export LC_NUMERIC=en_us.UTF-8
+export LC_ALL=C
 
 print_help()
 {
-    echo "Usage:  xtf [-h|--help]"
-    echo "        xtf [FILTER] [COMMAND] USER LOG [LOG2 [...]"
-    echo ""
-    echo "COMMAND:"
-    echo "        list - listing of records for a given user"
-    echo "        list-currency - listing of the sorted list of occurring currencies"
-    echo "        status - statement of the actual account balance, grouped and sorted by currency"
-    echo "        profit - customer's account statement with fictitious return"
-    echo ""
-    echo "FILTER:"
-    echo "        -a DATETIME - after: only records AFTER this date and time (without it), DATETIME is a format YYYY-MM-DD HH:MM:SS"
-    echo "        -b DATETIME - before: only records BEFORE this one are considered date and time (without)"
-    echo "        -c CURRENCY - only records corresponding to the given currency"
+    printf "%b" "Usage:  xtf [-h|--help]\n"
+    printf "%b" "        xtf [FILTER] [COMMAND] USER LOG [LOG2 [...]\n"
+    printf "%b" "COMMAND:\n"
+    printf "%b" "        list - listing of records for a given user\n"
+    printf "%b" "        list-currency - listing of the sorted list of occurring currencies\n"
+    printf "%b" "        status - statement of the actual account balance, grouped and sorted by currency\n"
+    printf "%b" "        profit - customer's account statement with fictitious return\n"
+    printf "%b" "FILTER:\n"
+    printf "%b" "        -a DATETIME - after: only records AFTER this date and time (without it), DATETIME is a format YYYY-MM-DD HH:MM:SS\n"
+    printf "%b" "        -b DATETIME - before: only records BEFORE this one are considered date and time (without)\n"
+    printf "%b" "        -c CURRENCY - only records corresponding to the given currency\n"
 }
 
 # Default values for the options
@@ -41,7 +39,6 @@ COUNT_COMMAND=0
 COUNT_FILTER1=0
 COUNT_FILTER2=0
 COUNT_USER=0
-COUNT_LOG=0
 
 # Output values of functions
 FILTERED=""
@@ -61,11 +58,11 @@ while [ "$#" -gt 0 ]; do
                     FILTER1="$2"
                     COUNT_FILTER1=1
                 else 
-                    #TODO: error message if needed
+                    printf "Invalid DATE format\n" >&2
                     exit 1
                 fi
             else
-                #TODO: error message if needed
+                printf "More than one FROM DATE\n" >&2
                 exit 1
             fi
             shift 2
@@ -76,11 +73,11 @@ while [ "$#" -gt 0 ]; do
                     FILTER2="$2"
                     COUNT_FILTER2=1
                 else 
-                    #TODO: error message if needed
+                    printf "Invalid DATE format" >&2
                     exit 1
                 fi
             else
-                #TODO: error message if needed
+                printf "More than one TO DATE\n" >&2
                 exit 1
             fi
             shift 2
@@ -94,7 +91,7 @@ while [ "$#" -gt 0 ]; do
                 COMMAND="$1"
                 COUNT_COMMAND=1
             else
-                #TODO: error message if needed
+                printf "More than one COMAND\n" >&2
                 exit 1
             fi
             shift
@@ -102,7 +99,7 @@ while [ "$#" -gt 0 ]; do
         *)
             case "$1" in
                 *.log|*.gz)
-                    LOG="$LOG $(echo "$1" | tr -d ' ')"
+                    LOG="$LOG $1"
                     ;;
                 *)
                     if [ "$prev_arg" != '-a' ] && [ "$prev_arg" != '-b' ] && [ "$prev_arg" != '-c' ]; then
@@ -110,7 +107,7 @@ while [ "$#" -gt 0 ]; do
                             USER="$1"
                             COUNT_USER=1
                         else
-                        #TODO: error message if needed
+                        printf "More than one USER\n" >&2
                         exit 1
                         fi
                     fi
@@ -132,9 +129,8 @@ list()
                     # Use gunzip to decompress the file
                     decompressed_log=$(gunzip -c "$logfile")
                     # Use awk to filter lines containing the USER and sort them
-                    filtered_lines=$(echo "$decompressed_log" | awk -F';' -v user="$USER" '$1 == user' | sort)
+                    filtered_lines=$(printf "%b" "$decompressed_log" | awk -F';' -v user="$USER" '$1 == user' | sort)
                 else
-                     echo "" #TODO: error message if needed
                     continue
                 fi
             else
@@ -144,31 +140,25 @@ list()
 
             # If FILTER1 is set, filter lines after the specified date
             if [ -n "$FILTER1" ]; then
-                filtered_lines=$(echo "$filtered_lines" | awk -v filter1="$FILTER1" -F';' '{if ($2 > filter1) print}')
+                filtered_lines=$(printf "%b" "$filtered_lines" | awk -v filter1="$FILTER1" -F';' '{if ($2 > filter1) print}')
             fi
 
             # If FILTER2 is set, filter lines before the specified date
             if [ -n "$FILTER2" ]; then
-                filtered_lines=$(echo "$filtered_lines" | awk -v filter2="$FILTER2" -F';' '{if ($2 < filter2) print}')
+                filtered_lines=$(printf "%b" "$filtered_lines" | awk -v filter2="$FILTER2" -F';' '{if ($2 < filter2) print}')
             fi
 
             # If FILTER3 is set, filter lines by currency
             if [ -n "$FILTER3" ]; then
-                filtered_lines=$(echo "$filtered_lines" | awk -v filter3="$FILTER3" -F';' '{if ($3 == filter3) print}')
+                filtered_lines=$(printf "%b" "$filtered_lines" | awk -v filter3="$FILTER3" -F';' '{if ($3 == filter3) print}')
             fi
 
             # Store the filtered lines in the FILTERED variable
             if [ -n "$filtered_lines" ]; then
-                if [ "$COUNT_LOG" = 0 ]; then
                 FILTERED="$FILTERED$filtered_lines\n"
-                COUNT_LOG=0
-                else
-                FILTERED="$FILTERED$filtered_lines"
-                COUNT_LOG=1
-                fi 
             fi
         else
-            echo "" #TODO: error message if needed
+            printf "Error message\n" >&2
         fi
     done
 }
@@ -176,7 +166,7 @@ list()
 list_currency()
 {   
     list
-    CURRENCIES=$(echo "$FILTERED" | awk -F';' '{print $3}' | sort | uniq | awk 'NF')
+    CURRENCIES=$(printf "%b" "$FILTERED" | awk -F';' '{print $3}' | sort | uniq | awk 'NF')
 }
 
 status()
@@ -186,10 +176,10 @@ status()
     # Loop through each currency in CURRENCIES
     for currency in $CURRENCIES; do
         # Calculate actual account balance for the currency
-        balance=$(echo "$FILTERED" | awk -v curr="$currency" -F';' 'BEGIN {sum=0} $3 == curr {sum += $4} END {printf "%s : %.4f\n", curr, sum}')
+        balance=$(printf "%b" "$FILTERED" | awk -v curr="$currency" -F';' 'BEGIN {sum=0} $3 == curr {sum += $4} END {printf "%.4f\n", sum}')
 
         # Append currency and balance to the STATUS variable
-        STATUS="$STATUS$balance\n"
+        STATUS="$STATUS$currency : $balance\n"
     done
 }
 
@@ -200,38 +190,39 @@ profit()
     # Loop through each currency in CURRENCIES
     for currency in $CURRENCIES; do
         # Calculate the actual account balance for the currency
-        balance=$(echo "$FILTERED" | awk -v curr="$currency" -v profit_xtf="$XTF_PROFIT" -F';' 'BEGIN {sum=0} $3 == curr {if ($4 > 0) sum += $4 * (profit_xtf + 100) / 100; else sum += $4} END {printf "%s : %.4f\n", curr, sum}')
+        balance=$(printf "%b" "$FILTERED" | awk -v curr="$currency" -v profit_xtf="$XTF_PROFIT" -F';' 'BEGIN {sum=0} $3 == curr {if ($4 > 0) sum += $4 * (profit_xtf + 100) / 100; else sum += $4} END {printf "%.4f\n", sum}')
 
         # Append currency and balance to the PROFIT variable
-        PROFIT="$PROFIT$balance\n"
+        PROFIT="$PROFIT$currency : $balance\n"
     done
 }
 
+
 if [ "$COMMAND" = "list" ] || [ -z "$COMMAND" ]; then
     list
-    echo "$FILTERED"
+    printf "%b" "$FILTERED"
 
 elif [ "$COMMAND" = "list-currency" ]; then
     list_currency
-    echo "$CURRENCIES"
+    printf "%b" "$CURRENCIES"
 
 elif [ "$COMMAND" = "status" ]; then
     status
-    echo "$STATUS"
+    printf "%b" "$STATUS"
 
 elif [ "$COMMAND" = "profit" ]; then
    profit
-   echo "$PROFIT"
+   printf "%b" "$PROFIT"
 fi
 
 # DEBUGGING:
-# echo "USER: $USER"
-# echo "COMMAND: $COMMAND"
-# echo "FILTER1: $FILTER1"
-# echo "FILTER3: $FILTER3"
-# echo "FILTER2: $FILTER2"
-# echo "FILTERED:"
-# echo "$FILTERED"
-# echo "LOGY: $LOG"
-# echo "PROFIT: $PROFIT\n"
-# echo "$CURRENCIES"
+# printf "%b" "USER: $USER"
+# printf "%b" "COMMAND: $COMMAND"
+# printf "%b" "FILTER1: $FILTER1"
+# printf "%b" "FILTER3: $FILTER3"
+# printf "%b" "FILTER2: $FILTER2"
+# printf "%b" "FILTERED:"
+# printf "%b" "$FILTERED"
+# printf "%b" "LOGY: $LOG"
+# printf "%b" "PROFIT: $PROFIT\n"
+# printf "%b" "$CURRENCIES"

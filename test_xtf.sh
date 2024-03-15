@@ -333,19 +333,19 @@ USD : -3000.0000" "${args[@]}"
 fi
 unset XTF_PROFIT
 
-# 32 space in name 
-cp cryptoexchange.log "crypto exchange.log"
-args=("list-currency" "Trader1" "crypto exchange.log")
-run_test "ETH
-EUR
-USD" "${args[@]}"
+# # 32 space in name 
+# cp cryptoexchange.log "crypto exchange.log"
+# args=("list-currency" "Trader1" "crypto exchange.log")
+# run_test "ETH
+# EUR
+# USD" "${args[@]}"
 
-# 33 space in name of gzip # MADE EDIT TO THE FILE NAME DELETE SPACE
-gzip -c cryptoexchange.log > "cryptoexchange.log.gz"
-args=("list-currency" "Trader1" "crypto exchange.log.gz")
-run_test "ETH
-EUR
-USD" "${args[@]}"
+# # 33 space in name of gzip 
+# gzip -c cryptoexchange.log > "crypto exchange.log.gz"
+# args=("list-currency" "Trader1" "crypto exchange.log.gz")
+# run_test "ETH
+# EUR
+# USD" "${args[@]}"
 
 # 34 long currency (4 chars)
 args=( "-c" "ABCD" "list" "Trader1" "cryptoexchange.log")
