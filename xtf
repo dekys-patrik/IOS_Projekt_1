@@ -3,7 +3,7 @@
 # Title: XTF - eXtortion, Travesty, Fraud
 # Description: A script for pre-processing trade logs from crpyto stock exchange
 # Author: Patrik Dekýš (xdekysp00@stud.fit.vutbr.cz)
-# Last modified: 2024-03-13
+# Last modified: 2024-03-15
 
 export POSIXLY_CORRECT=yes
 export LC_ALL=C
@@ -158,7 +158,7 @@ list()
                 FILTERED="$FILTERED$filtered_lines\n"
             fi
         else
-            printf "Error message\n" >&2
+            printf "Invalid LOGFILE\n" >&2
         fi
     done
 }
@@ -215,14 +215,5 @@ elif [ "$COMMAND" = "profit" ]; then
    printf "%b" "$PROFIT"
 fi
 
-# DEBUGGING:
-# printf "%b" "USER: $USER"
-# printf "%b" "COMMAND: $COMMAND"
-# printf "%b" "FILTER1: $FILTER1"
-# printf "%b" "FILTER3: $FILTER3"
-# printf "%b" "FILTER2: $FILTER2"
-# printf "%b" "FILTERED:"
-# printf "%b" "$FILTERED"
-# printf "%b" "LOGY: $LOG"
-# printf "%b" "PROFIT: $PROFIT\n"
-# printf "%b" "$CURRENCIES"
+exit 0
+#========================== End of the script ==================================
