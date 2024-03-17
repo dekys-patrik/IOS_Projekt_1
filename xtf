@@ -3,7 +3,7 @@
 # Title: XTF - eXtortion, Travesty, Fraud
 # Description: A script for pre-processing trade logs from crpyto stock exchange
 # Author: Patrik Dekýš (xdekysp00@stud.fit.vutbr.cz)
-# Last modified: 2024-03-16
+# Last modified: 2024-03-17
 
 export POSIXLY_CORRECT=yes
 export LC_ALL=C
@@ -38,6 +38,7 @@ XTF_PROFIT=${XTF_PROFIT:-20}
 COUNT_COMMAND=0
 COUNT_FILTER1=0
 COUNT_FILTER2=0
+COUNT_FILTER3=0
 COUNT_USER=0
 
 # Output values of functions
@@ -87,7 +88,13 @@ while [ "$#" -gt 0 ]; do
             ;;
         # Check if the argument is a filer for currency (-c)
         -c)
-            FILTER3="$2"
+            if [ "$COUNT_FILTER3" = 0 ]; then
+                FILTER3="$2"
+                COUNT_FILTER3=1
+            else
+                printf "More than one CURRENCY\n" >&2
+                exit 1
+            fi
             shift 2
             ;;
         # Check if the argument is a valid command (list | list-currency | status | profit)
